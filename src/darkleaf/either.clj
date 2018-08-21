@@ -3,6 +3,7 @@
    [clojure.string :as str]))
 
 (defprotocol Either
+  (extract [this])
   (left? [this])
   (right? [this])
   (invert [this])
@@ -14,85 +15,72 @@
 (declare left)
 (declare right)
 
-(defmacro ^:private defeither [type-name val-name & body]
-  (let [generated-constructor (symbol (str "->" type-name))
-        constructor           (symbol (str/lower-case type-name))]
-    `(do
-       (deftype ~type-name [~val-name]
-         Object
-         (equals [this# other#]
-           (and
-            (= (class this#) (class other#))
-            (= ~val-name (. other# ~val-name))))
-         (hashCode [_] (hash ~val-name))
+(extend-protocol Either
+  Object
+  (extract [this] this)
+  (left? [this] false)
+  (right? [this] true)
+  (invert [this] (left this))
+  (-bimap [this leftf rightf] (-> this rightf))
 
-         clojure.lang.IHashEq
-         (hasheq [_] (hash ~val-name))
+  nil
+  (extract [this] this)
+  (left? [this] false)
+  (right? [this] true)
+  (invert [this] (left this))
+  (-bimap [this leftf rightf] (-> this rightf)))
 
-         clojure.lang.IDeref
-         (deref [_] ~val-name)
+(deftype Left [value]
+  Either
+  (extract [this] value)
+  (left? [this] true)
+  (right? [this] false)
+  (invert [this] value)
+  (-bimap [this leftf rightf] (-> value leftf left))
 
-         Either
-         ~@body)
+  Object
+  (equals [this other]
+    (and
+     (left? other)
+     (= value (extract other))))
+  (hashCode [_] (hash value))
 
-       (alter-meta! (var ~generated-constructor)
-                    assoc :private true)
+  clojure.lang.IHashEq
+  (hasheq [_] (hash value)))
 
-       (defn ~constructor
-         ([] (~constructor nil))
-         ([x#] (~generated-constructor x#)))
+(defmethod print-method Left [v ^java.io.Writer w]
+         (doto w
+           (.write "#<Left ")
+           (.write (pr-str (extract v)))
+           (.write ">")))
 
-       (defmethod print-method ~type-name [v# ^java.io.Writer w#]
-         (doto w#
-           (.write "#<")
-           (.write ~(str type-name))
-           (.write " ")
-           (.write (pr-str @v#))
-           (.write ">"))))))
+(defn right
+  ([] nil)
+  ([val] val))
 
-(defeither Left value
-  (left? [_] true)
-  (right? [_] false)
-  (invert [_] (right value))
-  (-bimap [_ leftf _] (-> value leftf left)))
-
-(defeither Right value
-  (left? [_] false)
-  (right? [_] true)
-  (invert [_] (left value))
-  (-bimap [_ _ rightf] (-> value rightf right)))
-
-;; потому, что это по определению может быть только 2 обрертки
-(defn either? [x]
-  (or (instance? Left x)
-      (instance? Right x)))
+(defn left
+  ([] (->Left nil))
+  ([val] (->Left val)))
 
 (defn bimap [leftf rightf mv]
   (-bimap mv leftf rightf))
 
-;; не объявлен в протоколе, т.к. это частный случай bimap
 (defn map-left [f mv]
   (bimap f identity mv))
 
-;; не объявлен в протоколе, т.к. это частный случай bimap
 (defn map-right [f mv]
   (bimap identity f mv))
 
 (defmacro let= [bindings & body]
   (assert (-> bindings count even?))
   (if (empty? bindings)
-    `(let [res# (do ~@body)]
-       (if (either? res#)
-         res#
-         (right res#)))
+    `(do ~@body)
     (let [[name expr & bindings] bindings]
-      `(let [val# ~expr]
-         (if (and (either? val#) (left? val#))
-           val#
-           (let [~name (if (either? val#)
-                         @val#
-                         val#)]
-             (let= [~@bindings] ~@body)))))))
+      `(let [~name ~expr]
+         (if (left? ~name)
+           ~name
+           (let= [~@bindings]
+             ~@body))))))
 
 (defn >>=
   ([mv f=] (let= [v mv] (f= v)))
