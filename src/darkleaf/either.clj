@@ -1,6 +1,4 @@
-(ns darkleaf.either
-  (:require
-   [clojure.string :as str]))
+(ns darkleaf.either)
 
 (defprotocol Either
   (extract [this])
