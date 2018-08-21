@@ -39,12 +39,13 @@ Either стоит использовать, когда ошибки являют
   (storage/tx-create (user/build params)))
 
 (defn process [params]
-  @(e/let= [ok   (check-logged-out=)
+  (e/extract
+   (e/let= [ok   (check-logged-out=)
             ok   (check-params= params)
             ok   (check-not-registered= params)
             user (create-user params)]
      (user-session/log-in! user)
-     [::processed user]))
+     [::processed user])))
 ```
 
 # Api
