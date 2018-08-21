@@ -17,7 +17,12 @@
             r (sut/right)]
         (t/is (= nil
                  (sut/extract l)
-                 (sut/extract r))))))
+                 (sut/extract r)))))
+    (t/testing "default right"
+      (t/is (sut/right? 1))
+      (t/is (sut/right? "str"))
+      (t/is (sut/right? []))
+      (t/is (sut/right? nil))))
   (t/testing "print"
     (let [l (sut/left)]
       (t/is (= "#<Left nil>" (pr-str l)))))
