@@ -1,5 +1,7 @@
 # Either
 
+[![CircleCI](https://circleci.com/gh/darkleaf/either/tree/master.svg?style=svg)](https://circleci.com/gh/darkleaf/either/tree/master)
+
 Реализация монады Either.
 
 Моделирует вычисления, которые могут закончитьсь неудачей.
