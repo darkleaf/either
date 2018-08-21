@@ -1,0 +1,23 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: clojure:tools-deps-alpine
+        environment:
+          CLJ_CONFIG: /root/project/.docker-clojure
+    steps:
+      - checkout
+      - restore_cache:
+          key:
+            deps
+            {{ checksum "deps.edn" }}
+      - run:
+          name: Tests
+          command: clojure -Adev:run-tests
+      - save_cache:
+          key:
+            deps
+            {{ checksum "deps.edn" }}
+          paths:
+            - /root/.m2
+            - /root/.gitlibs
