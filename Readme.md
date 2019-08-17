@@ -118,5 +118,5 @@ deps.edn:
 ```edn
 {:deps {darkleaf/either
         {:git/url "https://github.com/darkleaf/either.git"
-         :sha     "18877bc52019a4efa5ec8f32ddb4774d9ccff525"}}}
+         :sha     "b84fedd52afef27f938531a4836202512ae987e2"}}}
 ```
